@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# (c) Copyright 2020 Hewlett Packard Enterprise Development LP
+# (c) Copyright 2020-2021 Hewlett Packard Enterprise Development LP
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import print_function
+import os
 import unittest
 import base64
 from mock import MagicMock
@@ -33,7 +33,7 @@ class StaticsTest(unittest.TestCase):
 
     def test_base64(self):
         # a file that is guaranteed to be empty.
-        assert self.check64('/dev/null')
+        assert self.check64(os.devnull)
         # any non-empty file that we know will exist.
         assert self.check64('setup.py')
 

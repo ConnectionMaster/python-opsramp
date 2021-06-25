@@ -5,7 +5,7 @@
 # first_response.py
 # Classes dealing directly with OpsRamp First Response Policies.
 #
-# (c) Copyright 2020 Hewlett Packard Enterprise Development LP
+# (c) Copyright 2020-2021 Hewlett Packard Enterprise Development LP
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import print_function
 from opsramp.api import ORapi
 
 
@@ -51,3 +50,17 @@ class First_Response(ORapi):
 
     def disable(self, uuid):
         return self.api.post('%s/disable' % uuid)
+
+
+class ModelTraining(ORapi):
+    def __init__(self, parent):
+        super(ModelTraining, self).__init__(parent.api, 'machineLearning')
+
+    def train_model(self):
+        return self.api.post('train/ALERT_FIRST_RESPONSE_TRAINING')
+
+    def file_upload(self, payload, files):
+        return self.api.post('files', data=payload, files=files)
+
+    def get_training_file(self):
+        return self.api.get('files')

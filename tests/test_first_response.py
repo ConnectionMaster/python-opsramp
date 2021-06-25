@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# (c) Copyright 2020 Hewlett Packard Enterprise Development LP
+# (c) Copyright 2020-2021 Hewlett Packard Enterprise Development LP
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,10 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import print_function
 import unittest
 import requests_mock
-
 import opsramp.binding
 
 
@@ -33,6 +31,9 @@ class ApiTest(unittest.TestCase):
 
         self.first_response = self.client.first_response()
         assert 'First_Response' in str(self.first_response)
+
+        self.model_training = self.client.model_training()
+        assert 'ModelTraining' in str(self.model_training)
 
     def test_search(self):
         group = self.first_response
@@ -108,4 +109,48 @@ class ApiTest(unittest.TestCase):
             url = group.api.compute_url('%s/disable' % thisid)
             m.post(url, json=expected, complete_qs=True)
             actual = group.disable(uuid=thisid)
+            assert actual == expected
+
+    def test_model_training(self):
+        group = self.model_training
+        expected = "sample text"
+        with requests_mock.Mocker() as m:
+            url = group.api.compute_url('train/ALERT_FIRST_RESPONSE_TRAINING')
+            m.post(url, text=expected, complete_qs=True)
+            actual = group.train_model()
+            assert actual == expected
+
+    def test_file_upload(self):
+        group = self.model_training
+        expected = "sample text"
+        with requests_mock.Mocker() as m:
+            url = group.api.compute_url('files')
+            with open('tests/testing.csv', 'rb') as x:
+                file = {'attachment': ('testing.csv', x, 'text/csv')}
+                data = {'test': 'fake'}
+                m.post(url, text=expected, complete_qs=True)
+                actual = group.file_upload(data, file)
+                assert actual == expected
+
+    def test_get_training_file(self):
+        group = self.model_training
+        expected = {
+            "results": [
+                {
+                    "name": "sample"
+                }
+            ],
+            "totalResults": 1,
+            "orderBy": "createdTime",
+            "pageNo": 1,
+            "pageSize": 100,
+            "totalPages": 1,
+            "nextPage": False,
+            "previousPageNo": 0,
+            "descendingOrder": True
+        }
+        with requests_mock.Mocker() as m:
+            url = group.api.compute_url('files')
+            m.get(url, json=expected, complete_qs=True)
+            actual = group.get_training_file()
             assert actual == expected

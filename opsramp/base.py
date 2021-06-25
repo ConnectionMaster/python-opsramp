@@ -6,7 +6,7 @@
 # Containing various base classes used in other parts of the library
 # but not intended for direct use by callers.
 #
-# (c) Copyright 2019-2020 Hewlett Packard Enterprise Development LP
+# (c) Copyright 2019-2021 Hewlett Packard Enterprise Development LP
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,16 +20,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import print_function
 import requests
-try:
-    # Python 3
-    from urllib import parse as urlparse
-    from simplejson.errors import JSONDecodeError
-except ImportError:
-    # Python 2
-    import urlparse
-    JSONDecodeError = ValueError
+import logging
+from urllib import parse as urlparse
+from simplejson.errors import JSONDecodeError
+
+
+LOG = logging.getLogger(__name__)
 
 
 class Helpers(object):
@@ -250,7 +247,9 @@ class ApiObject(object):
         suffix = self.tracker.fullpath(suffix)
         if suffix:
             retval += suffix
-        return retval.rstrip('/')
+        retval = retval.rstrip('/')
+        LOG.debug(retval)
+        return retval
 
     def prep_headers(self, headers):
         if not headers:
@@ -261,13 +260,15 @@ class ApiObject(object):
         return hdr
 
     def process_result(self, url, resp):
-        if resp.status_code != requests.codes.OK:
+        hstatus = int(resp.status_code)
+        if hstatus < 200 or hstatus >= 300:
             msg = '%s %s %s %s' % (
                 resp,
                 resp.request.method,
                 url,
                 resp.content
             )
+            LOG.warning(msg)
             raise RuntimeError(msg)
         try:
             data = resp.json()
@@ -289,10 +290,10 @@ class ApiObject(object):
         resp = self.session.get(url, headers=hdr)
         return self.process_result(url, resp)
 
-    def post(self, suffix=None, headers=None, data=None, json=None):
+    def post(self, suffix=None, headers=None, data=None, json=None, files=None):
         url = self.compute_url(suffix)
         hdr = self.prep_headers(headers)
-        resp = self.session.post(url, headers=hdr, data=data, json=json)
+        resp = self.session.post(url, headers=hdr, data=data, json=json, files=files)
         return self.process_result(url, resp)
 
     def put(self, suffix=None, headers=None, data=None, json=None):
@@ -329,13 +330,14 @@ class ApiWrapper(object):
 
     @session.setter
     def session(self, value):
+        LOG.info(value)
         self.api.session = value
 
     def get(self, suffix=None, headers=None):
         return self.api.get(suffix, headers=headers)
 
-    def post(self, suffix=None, headers=None, data=None, json=None):
-        return self.api.post(suffix, headers=headers, data=data, json=json)
+    def post(self, suffix=None, headers=None, data=None, json=None, files=None):
+        return self.api.post(suffix, headers=headers, data=data, json=json, files=files)
 
     def put(self, suffix=None, headers=None, data=None, json=None):
         return self.api.put(suffix, headers=headers, data=data, json=json)

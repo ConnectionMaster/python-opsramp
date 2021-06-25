@@ -2,7 +2,7 @@
 #
 # Exercise the opsramp module as an illustration of how to use it.
 #
-# (c) Copyright 2019-2021 Hewlett Packard Enterprise Development LP
+# (c) Copyright 2021 Hewlett Packard Enterprise Development LP
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,11 +16,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
-import logging
 import argparse
+import logging
+import os
 
 import opsramp.binding
+import yaml
 
 
 def connect():
@@ -46,18 +47,21 @@ def main():
         logging.basicConfig()
         logging.getLogger().setLevel(logging.DEBUG)
 
-    partner_id = os.environ['OPSRAMP_TENANT_ID']
+    tenant_id = os.environ['OPSRAMP_TENANT_ID']
 
     ormp = connect()
-    partner = ormp.tenant(partner_id)
-    if partner.is_client():
-        print(partner_id, 'is not a partner-level tenant')
-        exit(2)
 
-    collection = partner.clients()
-    clist = collection.get()
-    for cdata in clist:
-        print('{0:12s} "{1}"'.format(cdata['uniqueId'], cdata['name']))
+    tenant = ormp.tenant(tenant_id)
+
+    group = tenant.model_training()
+    found = group.get_training_file()
+
+    # There is only ever at most one result in the 'results'
+    # list returned.
+    if found['results']:
+        print(yaml.dump(found['results'], default_flow_style=False))
+    else:
+        print('no training file found in tenant.')
 
 
 if __name__ == "__main__":
